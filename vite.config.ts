@@ -15,7 +15,7 @@ export default defineConfig({
       manifest: {
         name: "Skore King: Skull King Scorer",
         short_name: "Skore King",
-        description: "The Skull King scorer with mid-game player management",
+        description: "Yet another Skull King scorer, with enough features to board the ship!",
         theme_color: "#1d232a",
         background_color: "#1d232a",
         display: "standalone",
@@ -23,12 +23,12 @@ export default defineConfig({
         scope: base + "/",
         icons: [
           {
-            src: base + "/icons/icon-192.png",
+            src: base + "/favicon-192x192.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: base + "/icons/icon-512.png",
+            src: base + "/favicon-512x512.png",
             sizes: "512x512",
             type: "image/png",
           },
