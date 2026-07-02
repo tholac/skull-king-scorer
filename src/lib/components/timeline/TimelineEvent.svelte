@@ -1,8 +1,32 @@
 <script lang="ts">
-  import { gameStore } from '$lib/store/gameStore';
+  import { get } from 'svelte/store';
+  import { gameStore, activePlayers } from '$lib/store/gameStore';
+  import AddPlayerModal from '$lib/components/setup/AddPlayerModal.svelte';
   import type { Round, TimelineEvent } from '$lib/game/types';
   let { event }: { event: TimelineEvent } = $props();
   let expanded = $state(false);
+  let editModalOpen = $state(false);
+
+  const playerJoinedPayload = $derived(
+    event.type === 'player_joined'
+      ? (event.payload as { playerId?: string; name: string; initialScore: number })
+      : null,
+  );
+
+  // playerId may be absent in events saved before the field was added; fall back to name+round lookup
+  function resolvePlayerId(): string | null {
+    if (!playerJoinedPayload) return null;
+    if (playerJoinedPayload.playerId) return playerJoinedPayload.playerId;
+    return get(gameStore).players.find(
+      (p) => p.name === playerJoinedPayload.name && p.joinedAtRound === event.round,
+    )?.id ?? null;
+  }
+
+  const editPlayerData = $derived(
+    playerJoinedPayload
+      ? { name: playerJoinedPayload.name, scoreOffset: playerJoinedPayload.initialScore }
+      : null,
+  );
 
   const icons: Record<string, string> = {
     game_start: '🏴‍☠️',
@@ -94,17 +118,30 @@
       >
         {label}
       </button>
-      {#if event.round !== null && canEditRound(event.round)}
+      {#if event.type === 'player_joined'}
+        <button
+          class="btn btn-ghost btn-xs min-h-5 h-5 px-1"
+          aria-label="Edit player"
+          title="Edit player"
+          onclick={() => (editModalOpen = true)}
+        >✏️</button>
+      {:else if event.round !== null && canEditRound(event.round)}
         <button
           class="btn btn-ghost btn-xs min-h-5 h-5 px-1"
           aria-label={`Edit round ${event.round}`}
           title={`Edit round ${event.round}`}
-            onclick={() => {
-              if (event.round !== null) gameStore.goToRound(event.round);
-            }}
+          onclick={() => {
+            if (event.round !== null) gameStore.goToRound(event.round);
+          }}
         >✏️</button>
       {/if}
     </div>
+
+    {#if event.type === 'player_joined' && expanded && playerJoinedPayload}
+      <div class="mt-1 text-base-content/50">
+        Starting score: {playerJoinedPayload.initialScore}
+      </div>
+    {/if}
 
     {#if event.type === 'round_end' && expanded}
       <div class="mt-1 text-base-content/50">
@@ -175,4 +212,17 @@
       </div>
     {/if}
   </div>
+
+  {#if event.type === 'player_joined' && playerJoinedPayload}
+    <AddPlayerModal
+      bind:open={editModalOpen}
+      activePlayers={$activePlayers}
+      midGame={true}
+      editPlayer={editPlayerData}
+      onEdit={(name, scoreOffset) => {
+        const id = resolvePlayerId();
+        if (id) gameStore.updatePlayer(id, name, scoreOffset);
+      }}
+    />
+  {/if}
 </li>

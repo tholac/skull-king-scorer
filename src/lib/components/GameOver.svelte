@@ -9,7 +9,7 @@
   );
 </script>
 
-<div class="max-w-lg mx-auto py-12 px-4 text-center">
+<div class="py-12 px-4 text-center">
   <div class="text-6xl mb-4">☠️</div>
   <h1 class="text-3xl font-bold mb-2">Game over!</h1>
   {#if winner}

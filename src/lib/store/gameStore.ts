@@ -394,8 +394,35 @@ export const gameStore = {
       next = appendEvent(next, {
         round: s.currentRound,
         type: "player_joined",
-        payload: { name, initialScore },
+        payload: { playerId: player.id, name, initialScore },
       });
+      return next;
+    });
+  },
+
+  updatePlayer(playerId: string, name: string, scoreOffset: number) {
+    update((s) => {
+      let next: GameState = {
+        ...s,
+        players: s.players.map((p) =>
+          p.id === playerId ? { ...p, name, scoreOffset } : p,
+        ),
+      };
+      // Patch the player_joined timeline event payload too.
+      // Match by playerId if present (new events), or by name for older saved events.
+      const originalName = s.players.find((p) => p.id === playerId)?.name;
+      next = {
+        ...next,
+        timeline: next.timeline.map((ev) => {
+          if (ev.type !== "player_joined") return ev;
+          const p = ev.payload as { playerId?: string; name?: string };
+          const matches = p.playerId === playerId || (!p.playerId && p.name === originalName);
+          return matches
+            ? { ...ev, payload: { ...ev.payload, playerId, name, initialScore: scoreOffset } }
+            : ev;
+        }),
+      };
+      next = recomputeTotalScores(next);
       return next;
     });
   },

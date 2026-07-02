@@ -20,7 +20,7 @@
 </script>
 
 <Shell>
-  <ThreePanelLayout>
+  <ThreePanelLayout hideRight={$gameStore.phase === 'gameover'}>
     {#snippet timeline()}
       <Timeline />
     {/snippet}
@@ -33,10 +33,10 @@
       {:else if $gameStore.phase === 'scoring'}
         <ScoringForm />
       {:else if $gameStore.phase === 'gameover'}
-        <GameOver />
+      <GameOver />
       {/if}
     {/snippet}
-
+      
     {#snippet scoreboard()}
       <Scoreboard />
     {/snippet}

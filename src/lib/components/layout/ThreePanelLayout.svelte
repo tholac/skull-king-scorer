@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  let { timeline, main, scoreboard }: {
+  let { timeline, main, scoreboard, hideRight = false }: {
     timeline: Snippet;
     main: Snippet;
     scoreboard: Snippet;
+    hideRight?: boolean;
   } = $props();
 
   const MIN_PCT = 10;
@@ -54,7 +55,7 @@
   <!-- Left drag handle -->
   <button
     type="button"
-    class="hidden lg:block w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 flex-shrink-0 transition-colors border-none bg-transparent p-0"
+    class="hidden lg:block w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 shrink-0 transition-colors border-none bg-transparent p-0"
     aria-label="Resize timeline panel"
     onmousedown={(e) => startDrag('left', e)}
   ></button>
@@ -63,10 +64,11 @@
     {@render main()}
   </section>
 
+  {#if !hideRight}
   <!-- Right drag handle -->
   <button
     type="button"
-    class="hidden lg:block w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 flex-shrink-0 transition-colors border-none bg-transparent p-0"
+    class="hidden lg:block w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 shrink-0 transition-colors border-none bg-transparent p-0"
     aria-label="Resize scoreboard panel"
     onmousedown={(e) => startDrag('right', e)}
   ></button>
@@ -77,4 +79,5 @@
   >
     {@render scoreboard()}
   </aside>
+  {/if}
 </div>
