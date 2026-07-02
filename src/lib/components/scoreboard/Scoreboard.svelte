@@ -27,6 +27,12 @@
 
     return entries;
   });
+
+  const scoreRounds = $derived(
+    [...$gameStore.rounds]
+      .filter((round) => round.number <= $gameStore.meta.totalRounds)
+      .sort((a, b) => a.number - b.number),
+  );
 </script>
 
 <div class="p-3">
@@ -38,7 +44,9 @@
           <th>#</th>
           <th>Player</th>
           <th class="text-right">Total</th>
-          <th>Per round</th>
+          {#each scoreRounds as round (round.number)}
+            <th class="text-right">R{round.number}</th>
+          {/each}
           <th></th>
         </tr>
       </thead>
@@ -47,7 +55,7 @@
           <PlayerRow
             player={entry.player}
             rank={entry.rank}
-            rounds={$gameStore.rounds}
+            rounds={scoreRounds}
             onRemove={$gameStore.phase === 'bidding' ? gameStore.removePlayer : undefined}
           />
         {/each}

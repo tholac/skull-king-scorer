@@ -1,9 +1,14 @@
 <script lang="ts">
-  import { gameStore, activePlayers, canGoBack } from '$lib/store/gameStore';
+  import {
+    gameStore,
+    activePlayers,
+    canGoBack,
+    canGoForward,
+  } from '$lib/store/gameStore';
   import AddPlayerModal from '$lib/components/setup/AddPlayerModal.svelte';
   import type { Bid } from '$lib/game/types';
   import type { ScorePreset } from '$lib/game/playerUtils';
-    import NumberInput from '../shared/NumberInput.svelte';
+  import NumberInput from '../shared/NumberInput.svelte';
 
   const cardsInPlay = $derived(
     $gameStore.meta.cardsPerRound[$gameStore.currentRound - 1] ?? 10,
@@ -14,21 +19,54 @@
 
   let bids = $state<Record<string, number>>({});
   let modalOpen = $state(false);
+  let loadedBidKey = $state('');
+
+  const savedRound = $derived(
+    $gameStore.rounds.find((r) => r.number === $gameStore.currentRound),
+  );
+  const sourceBids = $derived(
+    $gameStore.currentBids.length
+      ? $gameStore.currentBids
+      : (savedRound?.bids ?? []),
+  );
+  const bidPlayers = $derived(
+    sourceBids.length
+      ? sourceBids
+          .map((bid) => $gameStore.players.find((p) => p.id === bid.playerId))
+          .filter((player) => player !== undefined)
+      : $activePlayers,
+  );
 
   $effect(() => {
-    const activeIds = new Set($activePlayers.map((p) => p.id));
+    const nextKey = `${$gameStore.currentRound}|${sourceBids
+      .map((bid) => `${bid.playerId}:${bid.bid}`)
+      .join(',')}`;
+
+    if (nextKey === loadedBidKey) return;
+
+    const nextBids: Record<string, number> = {};
+    for (const player of bidPlayers) {
+      nextBids[player.id] =
+        sourceBids.find((bid) => bid.playerId === player.id)?.bid ?? 0;
+    }
+    bids = nextBids;
+    loadedBidKey = nextKey;
+  });
+
+  $effect(() => {
+    const bidPlayerIds = new Set(bidPlayers.map((p) => p.id));
 
     for (const id of Object.keys(bids)) {
-      if (!activeIds.has(id)) delete bids[id];
+      if (!bidPlayerIds.has(id)) delete bids[id];
     }
 
-    for (const p of $activePlayers) {
+    for (const p of bidPlayers) {
       if (!(p.id in bids)) bids[p.id] = 0;
     }
   });
 
   const bidSum = $derived(
-    $activePlayers.reduce((sum, p) => sum + (bids[p.id] ?? 0), 0),
+    bidPlayers.reduce((sum, p) => sum + (bids[p.id] ?? 0), 0),
   );
 
   const sumEmoji = $derived(
@@ -41,7 +79,7 @@
   }
 
   function proceed() {
-    const bidList: Bid[] = $activePlayers.map((p) => ({
+    const bidList: Bid[] = bidPlayers.map((p) => ({
       playerId: p.id,
       bid: bids[p.id] ?? 0,
     }));
@@ -87,7 +125,7 @@
   </div>
 
   <div class="space-y-3 mb-6">
-    {#each $activePlayers as player (player.id)}
+    {#each bidPlayers as player (player.id)}
       <div class="flex items-center gap-3">
         <span class="flex-1 font-medium">{player.name}</span>
         <NumberInput
@@ -111,6 +149,9 @@
     <div class="flex gap-2">
       {#if $canGoBack}
         <button class="btn btn-ghost btn-sm" onclick={() => gameStore.goBack()}>← Back</button>
+      {/if}
+      {#if $canGoForward}
+        <button class="btn btn-ghost btn-sm" onclick={() => gameStore.goForward()}>Forward →</button>
       {/if}
       <button class="btn btn-ghost btn-sm" onclick={() => (modalOpen = true)}>+ Add player</button>
     </div>

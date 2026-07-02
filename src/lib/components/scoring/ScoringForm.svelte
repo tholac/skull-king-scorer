@@ -1,38 +1,63 @@
 <script lang="ts">
-  import { gameStore, activePlayers, canGoBack } from "$lib/store/gameStore";
+  import {
+    gameStore,
+    canGoBack,
+    canGoForward,
+  } from "$lib/store/gameStore";
   import TurnExtras from "./TurnExtras.svelte";
   import { computeRoundScore } from "$lib/game/scoring";
   import type { TrickScore, TurnExtra } from "$lib/game/types";
   import NumberInput from "../shared/NumberInput.svelte";
   import BonusHelpPopup from "../shared/BonusHelpPopup.svelte";
 
-  const cardsInPlay = $derived(
-    $gameStore.meta.cardsPerRound[$gameStore.currentRound - 1] ?? 10,
-  );
-
   let rows = $state<
     Record<string, { tricksWon: number; bidRespected: boolean; bonus: number }>
   >({});
   let turnExtras = $state<TurnExtra[]>([]);
+  let loadedScoreKey = $state("");
+
+  const savedRound = $derived(
+    $gameStore.rounds.find((r) => r.number === $gameStore.currentRound),
+  );
+  const scoreBids = $derived(
+    $gameStore.currentBids.length
+      ? $gameStore.currentBids
+      : (savedRound?.bids ?? []),
+  );
+  const scorePlayers = $derived(
+    scoreBids
+      .map((bid) => $gameStore.players.find((p) => p.id === bid.playerId))
+      .filter((player) => player !== undefined),
+  );
+  const cardsInPlay = $derived(
+    savedRound?.cardsInPlay ??
+      $gameStore.meta.cardsPerRound[$gameStore.currentRound - 1] ??
+      10,
+  );
 
   function getBid(playerId: string): number {
-    return (
-      $gameStore.currentBids.find((b) => b.playerId === playerId)?.bid ?? 0
-    );
+    return scoreBids.find((b) => b.playerId === playerId)?.bid ?? 0;
   }
 
   function defaultRow(playerId: string) {
     return { tricksWon: getBid(playerId), bidRespected: true, bonus: 0 };
   }
 
-  // Pre-fill from saved round when navigating back
-  const savedRound = $derived(
-    $gameStore.rounds.find((r) => r.number === $gameStore.currentRound),
-  );
-
   $effect(() => {
+    const scoreKey = savedRound
+      ? savedRound.scores
+          .map(
+            (score) =>
+              `${score.playerId}:${score.bid}:${score.tricksWon}:${score.bidRespected}:${score.bonus}`,
+          )
+          .join(",") + JSON.stringify(savedRound.turnExtras)
+      : scoreBids.map((bid) => `${bid.playerId}:${bid.bid}`).join(",");
+    const nextKey = `${$gameStore.currentRound}|${scoreKey}`;
+
+    if (nextKey === loadedScoreKey) return;
+
+    const nextRows: typeof rows = {};
     if (savedRound) {
-      const nextRows: typeof rows = {};
       for (const sc of savedRound.scores) {
         nextRows[sc.playerId] = {
           tricksWon: sc.tricksWon,
@@ -40,9 +65,16 @@
           bonus: sc.bonus,
         };
       }
-      rows = nextRows;
       turnExtras = [...savedRound.turnExtras];
+    } else {
+      for (const player of scorePlayers) {
+        nextRows[player.id] = defaultRow(player.id);
+      }
+      turnExtras = [];
     }
+
+    rows = nextRows;
+    loadedScoreKey = nextKey;
   });
 
   function actualTricksWon(playerId: string): number {
@@ -66,7 +98,7 @@
     ),
   );
   const totalActualTricks = $derived(
-    $gameStore.currentBids.reduce(
+    scoreBids.reduce(
       (sum, bid) => sum + actualTricksWon(bid.playerId),
       0,
     ),
@@ -76,7 +108,7 @@
   $effect(() => {
     let changed = false;
     const nextRows = { ...rows };
-    for (const player of $activePlayers) {
+    for (const player of scorePlayers) {
       if (!(player.id in nextRows)) {
         nextRows[player.id] = defaultRow(player.id);
         changed = true;
@@ -118,9 +150,9 @@
     row.tricksWon = bid === 0 ? 1 : Math.max(0, bid - 1);
   }
 
-  function save() {
-    const scores: TrickScore[] = $activePlayers
-      .filter((p) => $gameStore.currentBids.some((b) => b.playerId === p.id))
+  function save(finishGame = false) {
+    const scores: TrickScore[] = scorePlayers
+      .filter((p) => scoreBids.some((b) => b.playerId === p.id))
       .map((p) => {
         const row = rows[p.id] ?? defaultRow(p.id);
         const bid = getBid(p.id);
@@ -134,7 +166,7 @@
           roundScore: previewScore(p.id),
         };
       });
-    gameStore.saveRound(scores, turnExtras, cardsInPlay);
+    gameStore.saveRound(scores, turnExtras, cardsInPlay, finishGame);
   }
 </script>
 
@@ -155,8 +187,8 @@
     {/if}
   </p>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-    {#each $activePlayers as player (player.id)}
+  <div class="flex flex-wrap gap-3 mb-4">
+    {#each scorePlayers as player (player.id)}
       {@const bid = getBid(player.id)}
       {@const row = rows[player.id]}
       {#if row}
@@ -264,6 +296,14 @@
         >← Back</button
       >
     {/if}
-    <button class="btn btn-primary flex-1" onclick={save}>Save round ✓</button>
+    {#if $canGoForward}
+      <button class="btn btn-ghost" onclick={() => gameStore.goForward()}
+        >Forward →</button
+      >
+    {/if}
+    <button class="btn btn-primary flex-1" onclick={() => save()}
+      >Save round ✓</button
+    >
+    <button class="btn btn-warning" onclick={() => save(true)}>End now</button>
   </div>
 </div>

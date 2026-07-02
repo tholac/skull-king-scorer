@@ -7,9 +7,15 @@
     onRemove?: (id: string) => void;
   } = $props();
 
-  const perRound = $derived(
-    rounds.map((r) => r.scores.find((s) => s.playerId === player.id)?.roundScore ?? null),
-  );
+  function formatScore(score: number | null): string {
+    if (score === null) return '—';
+    return score >= 0 ? `+${score}` : String(score);
+  }
+
+  function scoreClass(score: number | null): string {
+    if (score === null) return 'text-base-content/40';
+    return score >= 0 ? 'text-success' : 'text-error';
+  }
 </script>
 
 <tr class:opacity-40={!player.active}>
@@ -19,18 +25,22 @@
     {#if !player.active}<span class="badge badge-xs ml-1">out</span>{/if}
   </td>
   <td class="text-right font-bold tabular-nums">{player.totalScore}</td>
-  <td class="text-xs text-base-content/50 tabular-nums">
-    {#each perRound as score}
-      <span class="mr-1">{score !== null ? (score >= 0 ? `+${score}` : score) : '—'}</span>
-    {/each}
-  </td>
-  {#if onRemove && player.active}
-    <td>
+  {#each rounds as round (round.number)}
+    {@const score = round.scores.find((s) => s.playerId === player.id)?.roundScore ?? null}
+    <td
+      class={`text-right text-xs tabular-nums ${scoreClass(score)}`}
+    >
+      {formatScore(score)}
+    </td>
+  {/each}
+  <td>
+    {#if onRemove && player.active}
       <button
         class="btn btn-ghost btn-xs text-error"
         onclick={() => onRemove?.(player.id)}
         aria-label="Remove {player.name}"
-      >🗑️</button>
-    </td>
-  {/if}
+        >🗑️</button
+      >
+    {/if}
+  </td>
 </tr>

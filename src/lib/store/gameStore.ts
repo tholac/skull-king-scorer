@@ -86,13 +86,17 @@ function normalizeTimelineIds(state: GameState): GameState {
 }
 
 function recomputeTotalScores(state: GameState): GameState {
+  const scoringRounds = state.rounds.filter(
+    (round) => round.number <= state.meta.totalRounds,
+  );
+
   return {
     ...state,
     players: state.players.map((p) => ({
       ...p,
       totalScore:
         p.scoreOffset +
-        state.rounds.reduce((sum, round) => {
+        scoringRounds.reduce((sum, round) => {
           const score = round.scores.find((s) => s.playerId === p.id);
           return sum + (score?.roundScore ?? 0);
         }, 0),
@@ -101,6 +105,45 @@ function recomputeTotalScores(state: GameState): GameState {
 }
 
 type AppendEvent = Omit<Omit<TimelineEvent, "id">, "timestamp">;
+
+function findRound(state: GameState, roundNumber: number) {
+  return state.rounds.find((round) => round.number === roundNumber);
+}
+
+function findPreviousRound(state: GameState) {
+  const previousRounds = state.rounds.filter(
+    (round) =>
+      round.number < state.currentRound &&
+      round.number <= state.meta.totalRounds,
+  );
+  if (state.phase === "gameover") {
+    return state.rounds
+      .filter((round) => round.number <= state.meta.totalRounds)
+      .at(-1);
+  }
+  return previousRounds.at(-1);
+}
+
+function findNextRound(state: GameState) {
+  return state.rounds.find(
+    (round) =>
+      round.number > state.currentRound &&
+      round.number <= state.meta.totalRounds,
+  );
+}
+
+function hasRoundStartEvent(state: GameState, roundNumber: number) {
+  return state.timeline.some(
+    (event) => event.round === roundNumber && event.type === "round_start",
+  );
+}
+
+function roundsMatch(
+  a: GameState["rounds"][number],
+  b: GameState["rounds"][number],
+) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 function appendEvent(state: GameState, event: AppendEvent): GameState {
   const id = getNextTimelineId(state.timeline);
@@ -188,12 +231,20 @@ export const gameStore = {
     scores: TrickScore[],
     turnExtras: TurnExtra[],
     cardsInPlay: number,
+    finishGame = false,
   ) {
     update((s) => {
+      const existingIndex = s.rounds.findIndex(
+        (r) => r.number === s.currentRound,
+      );
+      const existingRound = existingIndex >= 0 ? s.rounds[existingIndex] : null;
+      const roundBids = s.currentBids.length
+        ? s.currentBids
+        : (existingRound?.bids ?? []);
       const round = {
         number: s.currentRound,
         cardsInPlay,
-        bids: s.currentBids,
+        bids: roundBids,
         scores: scores.map((sc) => ({
           ...sc,
           roundScore: computeRoundScore(
@@ -208,19 +259,69 @@ export const gameStore = {
         })),
         turnExtras,
       };
-      const existingIndex = s.rounds.findIndex(
-        (r) => r.number === s.currentRound,
-      );
       const updatedRounds =
         existingIndex >= 0
           ? s.rounds.map((r, i) => (i === existingIndex ? round : r))
           : [...s.rounds, round];
       let next: GameState = {
         ...s,
+        meta: finishGame ? { ...s.meta, totalRounds: s.currentRound } : s.meta,
         rounds: updatedRounds,
         currentBids: [],
       };
       next = recomputeTotalScores(next);
+      const isEditingSavedRound = existingRound !== null;
+
+      if (isEditingSavedRound) {
+        if (!roundsMatch(existingRound, round)) {
+          next = appendEvent(next, {
+            round: s.currentRound,
+            type: "round_updated",
+            payload: {
+              before: existingRound,
+              after: round,
+            },
+          });
+        }
+
+        if (finishGame) {
+          next = appendEvent(next, {
+            round: s.currentRound,
+            type: "game_ended_early",
+            payload: { finalRound: s.currentRound },
+          });
+          next.phase = "gameover";
+          next.currentRound = s.currentRound;
+          next = recomputeTotalScores(next);
+          return next;
+        }
+
+        const nextRoundNumber = s.currentRound + 1;
+        if (s.currentRound >= s.meta.totalRounds) {
+          next.phase = "gameover";
+          next.currentRound = s.currentRound;
+          return next;
+        }
+
+        const nextSavedRound = findRound(next, nextRoundNumber);
+        next.currentRound = nextRoundNumber;
+        if (nextSavedRound) {
+          next.phase = "scoring";
+          next.currentBids = nextSavedRound.bids;
+          return next;
+        }
+
+        next.phase = "bidding";
+        if (!hasRoundStartEvent(next, nextRoundNumber)) {
+          next = appendEvent(next, {
+            round: nextRoundNumber,
+            type: "round_start",
+            payload: { cards: s.meta.cardsPerRound[nextRoundNumber - 1] },
+          });
+        }
+        return next;
+      }
+
       const everybodyPassedExtra = turnExtras.find(
         (e) => e.type === "everybody_passed",
       );
@@ -243,17 +344,30 @@ export const gameStore = {
         },
       });
 
+      if (finishGame) {
+        next = appendEvent(next, {
+          round: s.currentRound,
+          type: "game_ended_early",
+          payload: { finalRound: s.currentRound },
+        });
+        next.phase = "gameover";
+        next.currentRound = s.currentRound;
+        return next;
+      }
+
       const isLast = s.currentRound >= s.meta.totalRounds;
       if (isLast) {
         next.phase = "gameover";
       } else {
         next.phase = "bidding";
         next.currentRound = s.currentRound + 1;
-        next = appendEvent(next, {
-          round: next.currentRound,
-          type: "round_start",
-          payload: { cards: s.meta.cardsPerRound[next.currentRound - 1] },
-        });
+        if (!hasRoundStartEvent(next, next.currentRound)) {
+          next = appendEvent(next, {
+            round: next.currentRound,
+            type: "round_start",
+            payload: { cards: s.meta.cardsPerRound[next.currentRound - 1] },
+          });
+        }
       }
       return next;
     });
@@ -307,36 +421,100 @@ export const gameStore = {
   goBack() {
     update((s) => {
       if (s.phase === "scoring") {
-        // Go back to bidding for the same round (bids already in currentBids)
-        return { ...s, phase: "bidding" };
+        const savedRound = findRound(s, s.currentRound);
+        return {
+          ...s,
+          phase: "bidding",
+          currentBids: s.currentBids.length
+            ? s.currentBids
+            : (savedRound?.bids ?? []),
+        };
       }
 
       if (s.phase === "bidding" || s.phase === "gameover") {
-        // Go back to scoring the previous round
-        const prevRound = s.rounds[s.rounds.length - 1];
+        const prevRound = findPreviousRound(s);
         if (!prevRound) return s;
 
-        const rounds = s.rounds.slice(0, -1);
         let next: GameState = {
           ...s,
           phase: "scoring",
           currentRound: prevRound.number,
-          rounds,
           currentBids: prevRound.bids,
-          // Remove the round_end event and any events appended after the previous round_start
-          timeline: s.timeline.filter(
-            (e) =>
-              !(
-                e.round === prevRound.number &&
-                (e.type === "round_end" || e.type === "everybody_passed")
-              ) && !(e.round === s.currentRound && e.type === "round_start"),
-          ),
         };
         next = recomputeTotalScores(next);
         return next;
       }
 
       return s;
+    });
+  },
+
+  goForward() {
+    update((s) => {
+      if (s.phase === "bidding") {
+        const savedRound = findRound(s, s.currentRound);
+        if (!savedRound && s.currentBids.length === 0) return s;
+
+        return {
+          ...s,
+          phase: "scoring",
+          currentBids: savedRound?.bids ?? s.currentBids,
+        };
+      }
+
+      if (s.phase === "scoring") {
+        const nextSavedRound = findNextRound(s);
+        if (nextSavedRound) {
+          return {
+            ...s,
+            phase: "scoring",
+            currentRound: nextSavedRound.number,
+            currentBids: nextSavedRound.bids,
+          };
+        }
+
+        if (!findRound(s, s.currentRound)) return s;
+
+        if (s.currentRound >= s.meta.totalRounds) {
+          return { ...s, phase: "gameover", currentBids: [] };
+        }
+
+        const nextRoundNumber = s.currentRound + 1;
+        const nextRound = findRound(s, nextRoundNumber);
+        return {
+          ...s,
+          phase: nextRound ? "scoring" : "bidding",
+          currentRound: nextRoundNumber,
+          currentBids: nextRound?.bids ?? [],
+        };
+      }
+
+      return s;
+    });
+  },
+
+  goToRound(roundNumber: number) {
+    update((s) => {
+      if (s.phase === "setup") return s;
+
+      if (roundNumber < 1 || roundNumber > s.meta.totalRounds) return s;
+
+      const savedRound = findRound(s, roundNumber);
+      if (savedRound) {
+        return {
+          ...s,
+          phase: "scoring",
+          currentRound: savedRound.number,
+          currentBids: savedRound.bids,
+        };
+      }
+
+      return {
+        ...s,
+        phase: "bidding",
+        currentRound: roundNumber,
+        currentBids: [],
+      };
     });
   },
 
@@ -359,7 +537,25 @@ export const activePlayers = derived(gameStore, ($s) =>
 
 export const canGoBack = derived(gameStore, ($s) => {
   if ($s.phase === "scoring") return true;
-  if ($s.phase === "bidding" || $s.phase === "gameover")
-    return $s.rounds.length > 0;
+  if ($s.phase === "bidding" || $s.phase === "gameover") {
+    return findPreviousRound($s) !== undefined;
+  }
+  return false;
+});
+
+export const canGoForward = derived(gameStore, ($s) => {
+  if ($s.phase === "bidding") {
+    return (
+      findRound($s, $s.currentRound) !== undefined || $s.currentBids.length > 0
+    );
+  }
+
+  if ($s.phase === "scoring") {
+    return (
+      findNextRound($s) !== undefined ||
+      findRound($s, $s.currentRound) !== undefined
+    );
+  }
+
   return false;
 });
