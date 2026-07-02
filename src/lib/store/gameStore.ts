@@ -208,12 +208,30 @@ export const gameStore = {
         })),
         turnExtras,
       };
+      const existingIndex = s.rounds.findIndex(
+        (r) => r.number === s.currentRound,
+      );
+      const updatedRounds =
+        existingIndex >= 0
+          ? s.rounds.map((r, i) => (i === existingIndex ? round : r))
+          : [...s.rounds, round];
       let next: GameState = {
         ...s,
-        rounds: [...s.rounds, round],
+        rounds: updatedRounds,
         currentBids: [],
       };
       next = recomputeTotalScores(next);
+      const everybodyPassedExtra = turnExtras.find(
+        (e) => e.type === "everybody_passed",
+      );
+      if (everybodyPassedExtra) {
+        next = appendEvent(next, {
+          round: s.currentRound,
+          type: "everybody_passed",
+          payload: { count: everybodyPassedExtra.count ?? 1 },
+        });
+      }
+
       next = appendEvent(next, {
         round: s.currentRound,
         type: "round_end",
@@ -286,6 +304,42 @@ export const gameStore = {
     });
   },
 
+  goBack() {
+    update((s) => {
+      if (s.phase === "scoring") {
+        // Go back to bidding for the same round (bids already in currentBids)
+        return { ...s, phase: "bidding" };
+      }
+
+      if (s.phase === "bidding" || s.phase === "gameover") {
+        // Go back to scoring the previous round
+        const prevRound = s.rounds[s.rounds.length - 1];
+        if (!prevRound) return s;
+
+        const rounds = s.rounds.slice(0, -1);
+        let next: GameState = {
+          ...s,
+          phase: "scoring",
+          currentRound: prevRound.number,
+          rounds,
+          currentBids: prevRound.bids,
+          // Remove the round_end event and any events appended after the previous round_start
+          timeline: s.timeline.filter(
+            (e) =>
+              !(
+                e.round === prevRound.number &&
+                (e.type === "round_end" || e.type === "everybody_passed")
+              ) && !(e.round === s.currentRound && e.type === "round_start"),
+          ),
+        };
+        next = recomputeTotalScores(next);
+        return next;
+      }
+
+      return s;
+    });
+  },
+
   newGame() {
     update(() => defaultState());
   },
@@ -302,3 +356,10 @@ export const gameStore = {
 export const activePlayers = derived(gameStore, ($s) =>
   $s.players.filter((p) => p.active),
 );
+
+export const canGoBack = derived(gameStore, ($s) => {
+  if ($s.phase === "scoring") return true;
+  if ($s.phase === "bidding" || $s.phase === "gameover")
+    return $s.rounds.length > 0;
+  return false;
+});

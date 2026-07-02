@@ -8,10 +8,10 @@ export const extendedRuleset: Ruleset = {
   extras: [{ type: "kraken", label: "Kraken released", icon: "🦑" }],
   bonuses: [
     { label: "Skull King captures a pirate", points: "+20 per pirate" },
-    { label: "Mermaid escapes Skull King", points: "+20" },
+    { label: "Mermaid seduces Skull King", points: "+20" },
     { label: "Standard 14 (black) captured", points: "+10" },
     { label: "Loot card captured", points: "per card value" },
     { label: "Davy Jones bonus", points: "+20" },
-    { label: "Stingray captured", points: "+20" },
+    { label: "Stingray/Kraken captured", points: "+20" },
   ],
 };

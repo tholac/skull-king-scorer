@@ -1,7 +1,0 @@
-- remove bonus when bid not respected
-- event: everybody passed
-- missing feature: edit previous bids
-- missing feature: go back to previous screen (bids or score form)
-- new feature: make side panels resizable (drag to resize)
-- UI: show score cards in 2 columns instead of 1
-- fix UI: disable bonus (and change to zero) when bid not respected

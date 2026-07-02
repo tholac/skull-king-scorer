@@ -54,8 +54,9 @@ export interface TrickScore {
 }
 
 export interface TurnExtra {
-  type: "kraken" | "whale" | string;
+  type: "kraken" | "whale" | "everybody_passed" | string;
   note?: string;
+  count?: number;
 }
 
 export interface TurnExtraDefinition {

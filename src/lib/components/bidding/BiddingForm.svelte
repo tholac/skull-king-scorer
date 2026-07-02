@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameStore, activePlayers } from '$lib/store/gameStore';
+  import { gameStore, activePlayers, canGoBack } from '$lib/store/gameStore';
   import AddPlayerModal from '$lib/components/setup/AddPlayerModal.svelte';
   import type { Bid } from '$lib/game/types';
   import type { ScorePreset } from '$lib/game/playerUtils';
@@ -108,7 +108,12 @@
   </div>
 
   <div class="flex gap-2 justify-between">
-    <button class="btn btn-ghost btn-sm" onclick={() => (modalOpen = true)}>+ Add player</button>
+    <div class="flex gap-2">
+      {#if $canGoBack}
+        <button class="btn btn-ghost btn-sm" onclick={() => gameStore.goBack()}>← Back</button>
+      {/if}
+      <button class="btn btn-ghost btn-sm" onclick={() => (modalOpen = true)}>+ Add player</button>
+    </div>
     <button class="btn btn-primary" onclick={proceed}>Lock bids →</button>
   </div>
 </div>

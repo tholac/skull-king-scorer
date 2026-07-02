@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameStore } from '$lib/store/gameStore';
+  import { gameStore, canGoBack } from '$lib/store/gameStore';
   import Scoreboard from '$lib/components/scoreboard/Scoreboard.svelte';
 
   const winner = $derived(
@@ -22,10 +22,15 @@
     <Scoreboard />
   </div>
 
-  <button
-    class="btn btn-primary"
-    onclick={() => {
-      if (confirm('Start a new game?')) gameStore.newGame();
-    }}
-  >New game</button>
+  <div class="flex gap-3 justify-center">
+    {#if $canGoBack}
+      <button class="btn btn-ghost" onclick={() => gameStore.goBack()}>← Edit last round</button>
+    {/if}
+    <button
+      class="btn btn-primary"
+      onclick={() => {
+        if (confirm('Start a new game?')) gameStore.newGame();
+      }}
+    >New game</button>
+  </div>
 </div>
