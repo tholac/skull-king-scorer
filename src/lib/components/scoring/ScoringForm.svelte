@@ -240,7 +240,6 @@
                   {bid}
                 </button>
                 <ul
-                  tabindex="0"
                   class="dropdown-content menu bg-base-100 rounded-box shadow z-10 p-1 gap-1 w-28"
                 >
                   <li>
