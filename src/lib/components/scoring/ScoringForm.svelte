@@ -13,6 +13,7 @@
   let rows = $state<
     Record<string, { tricksWon: number; bidRespected: boolean; bonus: number }>
   >({});
+  let bidOverrides = $state<Record<string, number>>({});
   let turnExtras = $state<TurnExtra[]>([]);
   let loadedScoreKey = $state("");
 
@@ -36,7 +37,21 @@
   );
 
   function getBid(playerId: string): number {
+    if (playerId in bidOverrides) return bidOverrides[playerId];
     return scoreBids.find((b) => b.playerId === playerId)?.bid ?? 0;
+  }
+
+  function adjustBid(playerId: string, delta: number) {
+    const base = scoreBids.find((b) => b.playerId === playerId)?.bid ?? 0;
+    const current = getBid(playerId);
+    const next = Math.max(0, current + delta);
+    if (next === base) {
+      delete bidOverrides[playerId];
+    } else {
+      bidOverrides[playerId] = next;
+    }
+    const row = rows[playerId];
+    if (row?.bidRespected) row.tricksWon = getBid(playerId);
   }
 
   function defaultRow(playerId: string) {
@@ -211,11 +226,52 @@
               class="grid grid-cols-[4rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-3 min-w-0"
             >
               <span class="text-sm text-base-content/50 leading-none">Bid</span>
-              <span
-                class="text-sm font-semibold tabular-nums leading-none justify-self-center"
-              >
-                {bid}
-              </span>
+              <div class="dropdown dropdown-bottom justify-self-center">
+                <button
+                  type="button"
+                  tabindex="0"
+                  class="text-sm font-semibold tabular-nums leading-none"
+                  class:text-warning={player.id in bidOverrides}
+                  title="Adjust bid"
+                >
+                  {bid}
+                </button>
+                <ul
+                  tabindex="0"
+                  class="dropdown-content menu bg-base-100 rounded-box shadow z-10 p-1 gap-1 w-28"
+                >
+                  <li>
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-ghost justify-start"
+                      onclick={() => adjustBid(player.id, +1)}
+                    >
+                      +1 bid
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-ghost justify-start"
+                      disabled={bid <= 0}
+                      onclick={() => adjustBid(player.id, -1)}
+                    >
+                      −1 bid
+                    </button>
+                  </li>
+                  {#if player.id in bidOverrides}
+                    <li>
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-ghost justify-start text-error"
+                        onclick={() => adjustBid(player.id, -(bidOverrides[player.id] - (scoreBids.find((b) => b.playerId === player.id)?.bid ?? 0)))}
+                      >
+                        Reset
+                      </button>
+                    </li>
+                  {/if}
+                </ul>
+              </div>
               <button
                 type="button"
                 class="btn btn-square btn-sm min-h-11 min-w-11"
