@@ -27,6 +27,11 @@ export const peerStore = {
   subscribe: _store.subscribe,
 
   async startAsHost(gameId: string): Promise<string> {
+    if (peer) {
+      peer.destroy();
+      peer = null;
+      connections = [];
+    }
     const { Peer } = await import('peerjs');
     const roomId = roomIdFromGameId(gameId);
     peer = new Peer(roomId);
@@ -44,6 +49,10 @@ export const peerStore = {
           connections = connections.filter((c) => c !== conn);
           _store.update((s) => ({ ...s, guestCount: connections.length }));
         });
+        conn.on('error', () => {
+          connections = connections.filter((c) => c !== conn);
+          _store.update((s) => ({ ...s, guestCount: connections.length }));
+        });
       });
       peer!.on('error', (err) => {
         _store.update((s) => ({ ...s, status: 'error', error: String(err) }));
@@ -53,6 +62,10 @@ export const peerStore = {
   },
 
   async joinAsGuest(roomId: string, onState: (state: GameState) => void): Promise<void> {
+    if (peer) {
+      peer.destroy();
+      peer = null;
+    }
     const { Peer } = await import('peerjs');
     onStateReceived = onState;
     peer = new Peer();
