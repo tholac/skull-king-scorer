@@ -30,7 +30,7 @@
         class="btn btn-ghost btn-xs text-error"
         onclick={() => onRemove?.(player.id)}
         aria-label="Remove {player.name}"
-      >✕</button>
+      >🗑️</button>
     </td>
   {/if}
 </tr>

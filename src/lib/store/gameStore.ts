@@ -37,10 +37,47 @@ function loadState(): GameState {
   if (!browser) return defaultState();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as GameState) : defaultState();
+    if (!raw) return defaultState();
+    return normalizeTimelineIds(JSON.parse(raw) as GameState);
   } catch {
     return defaultState();
   }
+}
+
+function getNextTimelineId(timeline: TimelineEvent[]): number {
+  let maxId = -1;
+  for (const event of timeline) {
+    if (Number.isFinite(event.id) && event.id > maxId) {
+      maxId = event.id;
+    }
+  }
+  return maxId + 1;
+}
+
+function normalizeTimelineIds(state: GameState): GameState {
+  if (state.timeline.length === 0) return state;
+
+  const usedIds = new Set<number>();
+  let nextId = 0;
+  let changed = false;
+
+  const timeline = state.timeline.map((event) => {
+    const hasValidId = Number.isFinite(event.id);
+    let id = hasValidId ? event.id : -1;
+
+    if (!hasValidId || usedIds.has(id)) {
+      while (usedIds.has(nextId)) nextId += 1;
+      id = nextId;
+      changed = true;
+    }
+
+    usedIds.add(id);
+    if (id >= nextId) nextId = id + 1;
+
+    return hasValidId && event.id === id ? event : { ...event, id };
+  });
+
+  return changed ? { ...state, timeline } : state;
 }
 
 function recomputeTotalScores(state: GameState): GameState {
@@ -58,12 +95,16 @@ function recomputeTotalScores(state: GameState): GameState {
   };
 }
 
-function appendEvent(state: GameState, event: Omit<TimelineEvent, 'timestamp'>): GameState {
+type AppendEvent = Omit<Omit<TimelineEvent, 'id'>, 'timestamp'>;
+
+function appendEvent(state: GameState, event: AppendEvent): GameState {
+  const id = getNextTimelineId(state.timeline);
+  console.debug('Appending timeline event', { id, ...event });
   return {
     ...state,
     timeline: [
       ...state.timeline,
-      { ...event, timestamp: Date.now() },
+      { ...event, id, timestamp: Date.now() },
     ],
   };
 }
@@ -237,7 +278,7 @@ export const gameStore = {
   },
 
   hydrateFromPeer(state: GameState) {
-    _store.set(state);
+    _store.set(normalizeTimelineIds(state));
   },
 };
 

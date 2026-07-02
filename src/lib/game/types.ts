@@ -79,6 +79,7 @@ export interface Ruleset {
 }
 
 export interface TimelineEvent {
+  id: number;
   round: number | null;
   type:
     | 'game_start'

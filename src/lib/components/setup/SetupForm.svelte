@@ -38,7 +38,7 @@
           placeholder="Player {i + 1}"
         />
         {#if playerNames.length > 2}
-          <button class="btn btn-ghost btn-sm" onclick={() => removeRow(i)}>✕</button>
+          <button class="btn btn-ghost btn-sm" onclick={() => removeRow(i)}>🗑️</button>
         {/if}
       </div>
     {/each}

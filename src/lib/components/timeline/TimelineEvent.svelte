@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { gameStore } from '$lib/store/gameStore';
   import type { TimelineEvent } from '$lib/game/types';
   let { event }: { event: TimelineEvent } = $props();
   let expanded = $state(false);
@@ -25,6 +26,10 @@
       default: return event.type;
     }
   })());
+
+  function getPlayerName(playerId: string): string {
+    return $gameStore.players.find((p) => p.id === playerId)?.name ?? `Unknown (${playerId.slice(0, 8)})`;
+  }
 </script>
 
 <li class="flex gap-2 text-xs py-1">
@@ -37,7 +42,7 @@
     {#if event.type === 'round_end' && expanded}
       <div class="mt-1 text-base-content/50">
         {#each (event.payload.scores as Array<{ playerId: string; roundScore: number }>) as s}
-          <div>{s.playerId}: {s.roundScore >= 0 ? `+${s.roundScore}` : s.roundScore}</div>
+          <div>{getPlayerName(s.playerId)}: {s.roundScore >= 0 ? `+${s.roundScore}` : s.roundScore}</div>
         {/each}
       </div>
     {/if}

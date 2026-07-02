@@ -8,6 +8,25 @@
       return b.totalScore - a.totalScore;
     }),
   );
+
+  const ranked = $derived.by(() => {
+    const entries: Array<{ player: (typeof sorted)[number]; rank: number }> = [];
+    let lastScore: number | null = null;
+    let lastRank = 1;
+
+    for (const [i, player] of sorted.entries()) {
+      if (i === 0) {
+        lastRank = 1;
+      } else if (player.totalScore !== lastScore) {
+        lastRank = i + 1;
+      }
+
+      entries.push({ player, rank: lastRank });
+      lastScore = player.totalScore;
+    }
+
+    return entries;
+  });
 </script>
 
 <div class="p-3">
@@ -24,10 +43,10 @@
         </tr>
       </thead>
       <tbody>
-        {#each sorted as player, i}
+        {#each ranked as entry}
           <PlayerRow
-            {player}
-            rank={i + 1}
+            player={entry.player}
+            rank={entry.rank}
             rounds={$gameStore.rounds}
             onRemove={$gameStore.phase === 'bidding' ? gameStore.removePlayer : undefined}
           />

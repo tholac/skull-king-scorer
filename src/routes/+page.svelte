@@ -8,6 +8,7 @@
   import Shell from '$lib/components/layout/Shell.svelte';
   import ThreePanelLayout from '$lib/components/layout/ThreePanelLayout.svelte';
   import MobileScoreDrawer from '$lib/components/layout/MobileScoreDrawer.svelte';
+  import MobileTimelineDrawer from '$lib/components/layout/MobileTimelineDrawer.svelte';
   import { gameStore } from '$lib/store/gameStore';
   import { peerStore } from '$lib/store/peerStore';
 
@@ -46,4 +47,10 @@
       <Scoreboard />
     {/snippet}
   </MobileScoreDrawer>
+
+  <MobileTimelineDrawer>
+    {#snippet children()}
+      <Timeline />
+    {/snippet}
+  </MobileTimelineDrawer>
 </Shell>

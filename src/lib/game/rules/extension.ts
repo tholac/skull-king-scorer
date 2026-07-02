@@ -7,7 +7,6 @@ export const extendedRuleset: Ruleset = {
   maxPlayers: 8,
   extras: [
     { type: 'kraken', label: 'Kraken released', icon: '🦑' },
-    { type: 'whale', label: 'Whale surfaced', icon: '🐋' },
   ],
   bonuses: [
     { label: 'Skull King captures a pirate', points: '+20 per pirate' },
