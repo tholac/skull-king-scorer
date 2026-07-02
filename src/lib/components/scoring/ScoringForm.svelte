@@ -146,7 +146,6 @@
       return;
     }
 
-    row.bonus = 0;
     row.tricksWon = bid === 0 ? 1 : Math.max(0, bid - 1);
   }
 
@@ -255,7 +254,7 @@
                   step={5}
                   max={500}
                   valueName={`${player.name}'s bonus`}
-                  disabled={!row.bidRespected}
+                  disabled={false}
                 />
                 <BonusHelpPopup />
               </div>
