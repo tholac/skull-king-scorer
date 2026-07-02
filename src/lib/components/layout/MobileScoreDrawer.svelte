@@ -15,7 +15,7 @@
 
 {#if open}
   <div
-    class="lg:hidden fixed inset-0 z-50 flex flex-col justify-end"
+    class="lg:hidden fixed inset-0 z-60 flex flex-col justify-end"
     role="dialog"
     aria-modal="true"
   >
