@@ -44,4 +44,7 @@ describe('rascal scoring', () => {
   it('odd pool rounds down on 1 off', () => {
     expect(computeRoundScore(2, 1, 0, 4, 3, 'rascal')).toBe(15); // pool=30, half=15
   });
+  it('rascal 2+ off: bonus still added on top of 0 base', () => {
+    expect(computeRoundScore(3, 0, 20, 7, 5, 'rascal')).toBe(20);
+  });
 });

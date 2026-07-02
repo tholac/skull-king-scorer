@@ -14,6 +14,8 @@ export function suggestInitialScore(
     return Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
   }
 
+  // Intentionally conservative: use lower-middle for even counts so a mid-game
+  // joiner starts just below the median player rather than exactly at the midpoint.
   const mid = Math.floor(scores.length / 2);
   return scores.length % 2 === 1
     ? scores[mid]
