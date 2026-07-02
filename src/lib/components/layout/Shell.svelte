@@ -1,5 +1,6 @@
 <script lang="ts">
   import ConnectionBadge from '$lib/components/shared/ConnectionBadge.svelte';
+  import PeerPanel from '$lib/components/shared/PeerPanel.svelte';
   import { gameStore } from '$lib/store/gameStore';
 </script>
 
@@ -11,6 +12,7 @@
     <div class="flex-none gap-2 items-center">
       <ConnectionBadge />
       {#if $gameStore.phase !== 'setup'}
+        <PeerPanel />
         <button
           class="btn btn-ghost btn-xs"
           onclick={() => {
