@@ -9,6 +9,8 @@
   import type { TrickScore, TurnExtra } from "$lib/game/types";
   import NumberInput from "../shared/NumberInput.svelte";
   import BonusHelpPopup from "../shared/BonusHelpPopup.svelte";
+  import * as m from "$lib/paraglide/messages.js";
+  import { languageStore } from "$lib/store/languageStore.js";
 
   let rows = $state<
     Record<string, { tricksWon: number; bidRespected: boolean; bonus: number }>
@@ -184,19 +186,20 @@
   }
 </script>
 
+{#key $languageStore}
 <div class="max-w-4xl mx-auto py-6 px-4">
   <h2 class="text-xl font-bold mb-4">
-    Round {$gameStore.currentRound} — Scores
+    {m.scoring_title({ round: $gameStore.currentRound })}
   </h2>
   <p class="text-sm text-base-content/70 mb-3">
-    Cards this round: <span class="font-semibold">{cardsInPlay}</span>
+    {m.scoring_cards_this_round()} <span class="font-semibold">{cardsInPlay}</span>
     {#if hasKraken || everybodyPassedExtra}
       <span class="ml-2"
-        >(effective tricks limit: {effectiveTrickCap}{hasKraken
-          ? " — Kraken active"
-          : ""}{everybodyPassedExtra
-          ? ` — ${everybodyPassedExtra.count ?? 1}× everybody passed`
-          : ""})</span
+        >({m.scoring_effective_limit({
+          limit: effectiveTrickCap,
+          krakenSuffix: hasKraken ? m.scoring_kraken_suffix() : '',
+          passedSuffix: everybodyPassedExtra ? m.scoring_everybody_passed_suffix({ count: everybodyPassedExtra.count ?? 1 }) : '',
+        })})</span
       >
     {/if}
   </p>
@@ -225,14 +228,14 @@
             <div
               class="grid grid-cols-[4rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-3 min-w-0"
             >
-              <span class="text-sm text-base-content/50 leading-none">Bid</span>
+              <span class="text-sm text-base-content/50 leading-none">{m.scoring_bid_label()}</span>
               <div class="dropdown dropdown-bottom justify-self-center">
                 <button
                   type="button"
                   tabindex="0"
                   class="text-sm font-semibold tabular-nums leading-none"
                   class:text-warning={player.id in bidOverrides}
-                  title="Adjust bid"
+                  title={m.scoring_adjust_bid_title()}
                 >
                   {bid}
                 </button>
@@ -246,7 +249,7 @@
                       class="btn btn-xs btn-ghost justify-start"
                       onclick={() => adjustBid(player.id, +1)}
                     >
-                      +1 bid
+                      {m.scoring_bid_plus1()}
                     </button>
                   </li>
                   <li>
@@ -256,7 +259,7 @@
                       disabled={bid <= 0}
                       onclick={() => adjustBid(player.id, -1)}
                     >
-                      −1 bid
+                      {m.scoring_bid_minus1()}
                     </button>
                   </li>
                   {#if player.id in bidOverrides}
@@ -266,7 +269,7 @@
                         class="btn btn-xs btn-ghost justify-start text-error"
                         onclick={() => adjustBid(player.id, -(bidOverrides[player.id] - (scoreBids.find((b) => b.playerId === player.id)?.bid ?? 0)))}
                       >
-                        Reset
+                        {m.scoring_bid_reset()}
                       </button>
                     </li>
                   {/if}
@@ -278,7 +281,7 @@
                 class:btn-primary={row.bidRespected}
                 class:btn-secondary={!row.bidRespected}
                 aria-pressed={row.bidRespected}
-                aria-label={`Toggle whether ${player.name} respected the bid`}
+                aria-label={m.scoring_toggle_bid_respected({ name: player.name })}
                 onclick={() => setBidRespected(player.id, !row.bidRespected)}
               >
                 {row.bidRespected ? "✓" : "✕"}
@@ -289,7 +292,7 @@
                   bind:value={row.tricksWon}
                   min={0}
                   max={effectiveTrickCap}
-                  valueName={`${player.name}'s tricks won`}
+                  valueName={m.scoring_tricks_won_label({ name: player.name })}
                   disabled={row.bidRespected}
                 />
               </div>
@@ -299,7 +302,7 @@
               class="grid grid-cols-[4rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-3 min-w-0"
             >
               <span class="text-sm text-base-content/70 leading-none"
-                >Bonus</span
+                >{m.scoring_bonus_label()}</span
               >
               <div aria-hidden="true" class="h-11 w-11"></div>
               <div aria-hidden="true" class="h-11 w-11"></div>
@@ -309,7 +312,7 @@
                   min={-500}
                   step={5}
                   max={500}
-                  valueName={`${player.name}'s bonus`}
+                  valueName={m.scoring_bonus_input_label({ name: player.name })}
                   disabled={false}
                 />
                 <BonusHelpPopup />
@@ -326,20 +329,18 @@
   {#if trickDelta !== 0}
     <div class="alert alert-warning mb-4">
       <span>
-        ⚠️ Total tricks entered ({totalActualTricks})
         {#if trickDelta > 0}
-          exceed
+          {m.scoring_tricks_exceed({ total: totalActualTricks, limit: effectiveTrickCap, delta: Math.abs(trickDelta) })}
         {:else}
-          are below
+          {m.scoring_tricks_below({ total: totalActualTricks, limit: effectiveTrickCap, delta: Math.abs(trickDelta) })}
         {/if}
-        round limit ({effectiveTrickCap}) by {Math.abs(trickDelta)}.
         {#if hasKraken}
           <br />
-          Kraken is active, so one trick is removed from the round total.
+          {m.scoring_kraken_note()}
         {/if}
         {#if everybodyPassedExtra}
           <br />
-          {everybodyPassedExtra.count ?? 1} everybody-passed trick(s) removed.
+          {m.scoring_everybody_passed_note({ count: everybodyPassedExtra.count ?? 1 })}
         {/if}
       </span>
     </div>
@@ -348,17 +349,18 @@
   <div class="flex gap-2 mt-2">
     {#if $canGoBack}
       <button class="btn btn-ghost" onclick={() => gameStore.goBack()}
-        >← Back</button
+        >{m.nav_back()}</button
       >
     {/if}
     {#if $canGoForward}
       <button class="btn btn-ghost" onclick={() => gameStore.goForward()}
-        >Forward →</button
+        >{m.nav_forward()}</button
       >
     {/if}
     <button class="btn btn-primary flex-1" onclick={() => save()}
-      >Save round ✓</button
+      >{m.scoring_save()}</button
     >
-    <button class="btn btn-warning" onclick={() => save(true)}>End now</button>
+    <button class="btn btn-warning" onclick={() => save(true)}>{m.scoring_end_now()}</button>
   </div>
 </div>
+{/key}

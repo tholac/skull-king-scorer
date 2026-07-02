@@ -4,6 +4,8 @@
   import { gameStore } from '$lib/store/gameStore';
   import type { TurnExtra } from '$lib/game/types';
   import NumberInput from '$lib/components/shared/NumberInput.svelte';
+  import * as m from '$lib/paraglide/messages.js';
+  import { languageStore } from '$lib/store/languageStore.js';
 
   let { extras = $bindable([]) }: { extras: TurnExtra[] } = $props();
 
@@ -42,8 +44,9 @@
   }
 </script>
 
+{#key $languageStore}
 <div class="mb-4 p-3 bg-base-200 rounded-lg">
-  <h3 class="text-sm font-semibold mb-2 text-base-content/70">Turn events</h3>
+  <h3 class="text-sm font-semibold mb-2 text-base-content/70">{m.turn_events_title()}</h3>
   <div class="flex flex-wrap gap-3 items-center">
     {#each defs as def}
       <label class="flex items-center gap-2 cursor-pointer">
@@ -64,14 +67,15 @@
         checked={everybodyPassedChecked}
         onchange={(e) => toggleEverybodyPassed((e.target as HTMLInputElement).checked)}
       />
-      <span class="text-sm">🤝 Everybody passed</span>
+      <span class="text-sm">{m.turn_everybody_passed()}</span>
     </label>
 
     {#if everybodyPassedChecked}
       <div class="flex items-center gap-2">
-        <span class="text-xs text-base-content/60">× times:</span>
-        <NumberInput bind:value={passedCount} min={1} max={99} valueName="everybody passed count" />
+        <span class="text-xs text-base-content/60">{m.turn_times_label()}</span>
+        <NumberInput bind:value={passedCount} min={1} max={99} valueName={m.turn_everybody_passed_count()} />
       </div>
     {/if}
   </div>
 </div>
+{/key}

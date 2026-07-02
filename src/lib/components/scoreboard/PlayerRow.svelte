@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Player, Round } from '$lib/game/types';
+  import * as m from '$lib/paraglide/messages.js';
+  import { languageStore } from '$lib/store/languageStore.js';
   let { player, rank, rounds, onRemove }: {
     player: Player;
     rank: number;
@@ -18,11 +20,12 @@
   }
 </script>
 
+{#key $languageStore}
 <tr class:opacity-40={!player.active}>
   <td class="text-xs font-mono w-6">{rank}</td>
   <td class="font-semibold">
     {player.name}
-    {#if !player.active}<span class="badge badge-xs ml-1">out</span>{/if}
+    {#if !player.active}<span class="badge badge-xs ml-1">{m.scoreboard_out()}</span>{/if}
   </td>
   <td class="text-right font-bold tabular-nums">{player.totalScore}</td>
   {#each rounds as round (round.number)}
@@ -38,9 +41,10 @@
       <button
         class="btn btn-ghost btn-xs text-error"
         onclick={() => onRemove?.(player.id)}
-        aria-label="Remove {player.name}"
+        aria-label={m.scoreboard_remove_player({ name: player.name })}
         >🗑️</button
       >
     {/if}
   </td>
 </tr>
+{/key}

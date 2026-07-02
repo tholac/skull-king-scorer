@@ -2,6 +2,8 @@
   import { untrack } from 'svelte';
   import type { Player } from '$lib/game/types';
   import { suggestInitialScore, type ScorePreset } from '$lib/game/playerUtils';
+  import * as m from '$lib/paraglide/messages.js';
+  import { languageStore } from '$lib/store/languageStore.js';
 
   type ModalPreset = ScorePreset | 'manual';
 
@@ -61,42 +63,44 @@
 </script>
 
 {#if open}
+  {#key $languageStore}
   <dialog class="modal modal-open">
     <div class="modal-box">
-      <h3 class="font-bold text-lg mb-4">{isEditMode ? 'Edit player' : 'Add player'}</h3>
+      <h3 class="font-bold text-lg mb-4">{isEditMode ? m.modal_edit_player_title() : m.modal_add_player_title()}</h3>
 
       <label class="form-control mb-3">
-        <div class="label"><span class="label-text">Name</span></div>
-        <input class="input input-bordered" bind:value={name} placeholder="Player name" />
+        <div class="label"><span class="label-text">{m.modal_name_label()}</span></div>
+        <input class="input input-bordered" bind:value={name} placeholder={m.modal_player_name_placeholder()} />
       </label>
 
       {#if midGame || isEditMode}
         <div class="mb-3">
-          <div class="label"><span class="label-text">Starting score</span></div>
+          <div class="label"><span class="label-text">{m.modal_starting_score_label()}</span></div>
           <div class="join">
             {#each (['zero', 'average', 'median', 'manual'] as const) as p}
               <button
                 class="btn join-item btn-sm"
                 class:btn-primary={preset === p}
                 onclick={() => { preset = p; }}
-              >{p}</button>
+              >{p === 'zero' ? m.modal_preset_zero() : p === 'average' ? m.modal_preset_average() : p === 'median' ? m.modal_preset_median() : m.modal_preset_manual()}</button>
             {/each}
           </div>
           {#if preset === 'manual'}
             <input class="input input-bordered input-sm mt-2 w-full" type="number" bind:value={manualScore} />
           {:else}
-            <p class="text-sm text-base-content/60 mt-1">Score: {suggested}</p>
+            <p class="text-sm text-base-content/60 mt-1">{m.modal_score_label({ score: suggested })}</p>
           {/if}
         </div>
       {/if}
 
       <div class="modal-action">
-        <button class="btn btn-ghost" onclick={() => (open = false)}>Cancel</button>
+        <button class="btn btn-ghost" onclick={() => (open = false)}>{m.modal_cancel()}</button>
         <button class="btn btn-primary" onclick={submit} disabled={!name.trim()}>
-          {isEditMode ? 'Save' : 'Add'}
+          {isEditMode ? m.modal_save() : m.modal_add()}
         </button>
       </div>
     </div>
     <button class="modal-backdrop" onclick={() => (open = false)} aria-label="Close"></button>
   </dialog>
+  {/key}
 {/if}

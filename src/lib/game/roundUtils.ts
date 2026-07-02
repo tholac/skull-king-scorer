@@ -1,3 +1,5 @@
+import * as m from "$lib/paraglide/messages.js";
+
 export function computeCardsPerRound(
   playerCount: number,
   deckSize: number,
@@ -16,5 +18,5 @@ export function largeGroupWarning(
 ): string | null {
   if (!isLargeGroup(playerCount, deckSize)) return null;
   const maxCards = Math.floor(deckSize / playerCount);
-  return `With ${playerCount} players, you'll play ${maxCards} rounds with up to ${maxCards} cards instead of 10.`;
+  return m.setup_large_group_warning({ playerCount, maxCards });
 }

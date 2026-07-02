@@ -1,6 +1,8 @@
 <script lang="ts">
   import { gameStore, canGoBack } from '$lib/store/gameStore';
   import Scoreboard from '$lib/components/scoreboard/Scoreboard.svelte';
+  import * as m from '$lib/paraglide/messages.js';
+  import { languageStore } from '$lib/store/languageStore.js';
 
   const winner = $derived(
     [...$gameStore.players]
@@ -9,12 +11,13 @@
   );
 </script>
 
+{#key $languageStore}
 <div class="py-12 px-4 text-center">
   <div class="text-6xl mb-4">☠️</div>
-  <h1 class="text-3xl font-bold mb-2">Game over!</h1>
+  <h1 class="text-3xl font-bold mb-2">{m.gameover_title()}</h1>
   {#if winner}
     <p class="text-xl mb-6">
-      🏆 <span class="font-bold">{winner.name}</span> wins with {winner.totalScore} pts!
+      {m.gameover_winner({ name: winner.name, score: winner.totalScore })}
     </p>
   {/if}
 
@@ -24,13 +27,14 @@
 
   <div class="flex gap-3 justify-center">
     {#if $canGoBack}
-      <button class="btn btn-ghost" onclick={() => gameStore.goBack()}>← Edit last round</button>
+      <button class="btn btn-ghost" onclick={() => gameStore.goBack()}>{m.gameover_edit_last_round()}</button>
     {/if}
     <button
       class="btn btn-primary"
       onclick={() => {
-        if (confirm('Start a new game?')) gameStore.newGame();
+        if (confirm(m.gameover_new_game_confirm())) gameStore.newGame();
       }}
-    >New game</button>
+    >{m.new_game()}</button>
   </div>
 </div>
+{/key}

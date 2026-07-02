@@ -1,6 +1,8 @@
 <script lang="ts">
   import { gameStore } from '$lib/store/gameStore';
   import PlayerRow from './PlayerRow.svelte';
+  import * as m from '$lib/paraglide/messages.js';
+  import { languageStore } from '$lib/store/languageStore.js';
 
   const sorted = $derived(
     [...$gameStore.players].sort((a, b) => {
@@ -35,17 +37,18 @@
   );
 </script>
 
+{#key $languageStore}
 <div class="p-3">
-  <h2 class="font-bold text-sm uppercase tracking-wider text-base-content/60 mb-2">Scores</h2>
+  <h2 class="font-bold text-sm uppercase tracking-wider text-base-content/60 mb-2">{m.scoreboard_title()}</h2>
   <div class="overflow-x-auto">
     <table class="table table-xs w-full">
       <thead>
         <tr>
-          <th>#</th>
-          <th>Player</th>
-          <th class="text-right">Total</th>
+          <th>{m.scoreboard_col_rank()}</th>
+          <th>{m.scoreboard_col_player()}</th>
+          <th class="text-right">{m.scoreboard_col_total()}</th>
           {#each scoreRounds as round (round.number)}
-            <th class="text-right">R{round.number}</th>
+            <th class="text-right">{m.scoreboard_col_round({ n: round.number })}</th>
           {/each}
           <th></th>
         </tr>
@@ -63,3 +66,4 @@
     </table>
   </div>
 </div>
+{/key}

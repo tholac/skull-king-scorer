@@ -2,6 +2,8 @@
   import { get } from 'svelte/store';
   import { gameStore, activePlayers } from '$lib/store/gameStore';
   import AddPlayerModal from '$lib/components/setup/AddPlayerModal.svelte';
+  import * as m from '$lib/paraglide/messages.js';
+  import { languageStore } from '$lib/store/languageStore.js';
   import type { Round, TimelineEvent } from '$lib/game/types';
   let { event }: { event: TimelineEvent } = $props();
   let expanded = $state(false);
@@ -41,19 +43,20 @@
 
   const icon = $derived(icons[event.type] ?? '📌');
 
-  const label = $derived((() => {
+  function computeLabel(_lang: string): string {
     switch (event.type) {
-      case 'game_start': return 'Game started';
-      case 'round_start': return `Round ${event.round} — ${(event.payload as { cards: number }).cards} cards`;
-      case 'round_end': return `Round ${event.round} complete`;
-      case 'round_updated': return `Round ${event.round} updated`;
-      case 'game_ended_early': return `Game ended at round ${(event.payload as { finalRound: number }).finalRound}`;
-      case 'player_joined': return `${(event.payload as { name: string }).name} joined`;
-      case 'player_removed': return `${(event.payload as { name: string }).name} left`;
+      case 'game_start': return m.timeline_game_started();
+      case 'round_start': return m.timeline_round_start({ round: event.round ?? 0, cards: (event.payload as { cards: number }).cards });
+      case 'round_end': return m.timeline_round_complete({ round: event.round ?? 0 });
+      case 'round_updated': return m.timeline_round_updated({ round: event.round ?? 0 });
+      case 'game_ended_early': return m.timeline_game_ended_early({ round: (event.payload as { finalRound: number }).finalRound });
+      case 'player_joined': return m.timeline_player_joined({ name: (event.payload as { name: string }).name });
+      case 'player_removed': return m.timeline_player_left({ name: (event.payload as { name: string }).name });
       case 'turn_extra': return String(event.payload.type ?? 'Event');
       default: return event.type;
     }
-  })());
+  }
+  const label = $derived(computeLabel($languageStore));
 
   function getPlayerName(playerId: string): string {
     return $gameStore.players.find((p) => p.id === playerId)?.name ?? `Unknown (${playerId.slice(0, 8)})`;
@@ -108,6 +111,7 @@
   }
 </script>
 
+{#key $languageStore}
 <li class="flex gap-2 text-xs py-1">
   <span class="shrink-0 w-5 text-center">{icon}</span>
   <div class="min-w-0 flex-1">
@@ -121,15 +125,15 @@
       {#if event.type === 'player_joined'}
         <button
           class="btn btn-ghost btn-xs min-h-5 h-5 px-1"
-          aria-label="Edit player"
-          title="Edit player"
+          aria-label={m.timeline_edit_player()}
+          title={m.timeline_edit_player()}
           onclick={() => (editModalOpen = true)}
         >✏️</button>
       {:else if event.round !== null && canEditRound(event.round)}
         <button
           class="btn btn-ghost btn-xs min-h-5 h-5 px-1"
-          aria-label={`Edit round ${event.round}`}
-          title={`Edit round ${event.round}`}
+          aria-label={m.timeline_edit_round({ round: event.round })}
+          title={m.timeline_edit_round({ round: event.round })}
           onclick={() => {
             if (event.round !== null) gameStore.goToRound(event.round);
           }}
@@ -139,7 +143,7 @@
 
     {#if event.type === 'player_joined' && expanded && playerJoinedPayload}
       <div class="mt-1 text-base-content/50">
-        Starting score: {playerJoinedPayload.initialScore}
+        {m.timeline_starting_score({ score: playerJoinedPayload.initialScore })}
       </div>
     {/if}
 
@@ -157,7 +161,7 @@
       <div class="mt-1 space-y-1 text-base-content/60">
         {#if updated.before?.cardsInPlay !== updated.after?.cardsInPlay}
           <div>
-            Cards: {updated.before?.cardsInPlay ?? '—'} → {updated.after?.cardsInPlay ?? '—'}
+            {m.timeline_cards_changed({ before: updated.before?.cardsInPlay ?? '—', after: updated.after?.cardsInPlay ?? '—' })}
           </div>
         {/if}
 
@@ -165,11 +169,11 @@
           <table class="table table-xs w-full">
             <thead>
               <tr>
-                <th>Player</th>
-                <th class="text-right">Bid</th>
-                <th class="text-right">Tricks</th>
-                <th class="text-right">Bonus</th>
-                <th class="text-right">Score</th>
+                <th>{m.timeline_col_player()}</th>
+                <th class="text-right">{m.timeline_col_bid()}</th>
+                <th class="text-right">{m.timeline_col_tricks()}</th>
+                <th class="text-right">{m.timeline_col_bonus()}</th>
+                <th class="text-right">{m.timeline_col_score()}</th>
               </tr>
             </thead>
             <tbody>
@@ -206,7 +210,7 @@
 
         {#if JSON.stringify(updated.before?.turnExtras ?? []) !== JSON.stringify(updated.after?.turnExtras ?? [])}
           <div>
-            Extras: {formatExtras(updated.before)} → {formatExtras(updated.after)}
+            {m.timeline_extras_changed({ before: formatExtras(updated.before), after: formatExtras(updated.after) })}
           </div>
         {/if}
       </div>
@@ -226,3 +230,4 @@
     />
   {/if}
 </li>
+{/key}
