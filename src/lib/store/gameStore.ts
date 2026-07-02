@@ -1,14 +1,19 @@
-import { writable, derived } from 'svelte/store';
-import { browser } from '$app/environment';
+import { writable, derived } from "svelte/store";
+import { browser } from "$app/environment";
 import type {
-  GameState, Player, Bid, TrickScore, TurnExtra, TimelineEvent,
-} from '$lib/game/types';
-import { computeCardsPerRound } from '$lib/game/roundUtils';
-import { computeRoundScore } from '$lib/game/scoring';
-import { getRuleset } from '$lib/game/rules/index';
-import { suggestInitialScore, type ScorePreset } from '$lib/game/playerUtils';
+  GameState,
+  Player,
+  Bid,
+  TrickScore,
+  TurnExtra,
+  TimelineEvent,
+} from "$lib/game/types";
+import { computeCardsPerRound } from "$lib/game/roundUtils";
+import { computeRoundScore } from "$lib/game/scoring";
+import { getRuleset } from "$lib/game/rules/index";
+import { suggestInitialScore, type ScorePreset } from "$lib/game/playerUtils";
 
-const STORAGE_KEY = 'skore-king-state';
+const STORAGE_KEY = "skore-king-state";
 
 function makeId(): string {
   return globalThis.crypto.randomUUID();
@@ -18,18 +23,18 @@ function defaultState(): GameState {
   return {
     id: makeId(),
     meta: {
-      ruleset: 'base',
-      scoringMethod: 'classic',
+      ruleset: "base",
+      scoringMethod: "classic",
       totalRounds: 10,
       cardsPerRound: Array.from({ length: 10 }, (_, i) => i + 1),
     },
-    phase: 'setup',
+    phase: "setup",
     currentRound: 1,
     players: [],
     rounds: [],
     currentBids: [],
     timeline: [],
-    peer: { role: 'solo', roomId: null },
+    peer: { role: "solo", roomId: null },
   };
 }
 
@@ -95,17 +100,14 @@ function recomputeTotalScores(state: GameState): GameState {
   };
 }
 
-type AppendEvent = Omit<Omit<TimelineEvent, 'id'>, 'timestamp'>;
+type AppendEvent = Omit<Omit<TimelineEvent, "id">, "timestamp">;
 
 function appendEvent(state: GameState, event: AppendEvent): GameState {
   const id = getNextTimelineId(state.timeline);
-  console.debug('Appending timeline event', { id, ...event });
+  console.debug("Appending timeline event", { id, ...event });
   return {
     ...state,
-    timeline: [
-      ...state.timeline,
-      { ...event, id, timestamp: Date.now() },
-    ],
+    timeline: [...state.timeline, { ...event, id, timestamp: Date.now() }],
   };
 }
 
@@ -131,12 +133,15 @@ export const gameStore = {
 
   startGame(
     playerNames: string[],
-    ruleset: GameState['meta']['ruleset'],
-    scoringMethod: GameState['meta']['scoringMethod'],
+    ruleset: GameState["meta"]["ruleset"],
+    scoringMethod: GameState["meta"]["scoringMethod"],
   ) {
     update(() => {
       const r = getRuleset(ruleset);
-      const cardsPerRound = computeCardsPerRound(playerNames.length, r.deckSize);
+      const cardsPerRound = computeCardsPerRound(
+        playerNames.length,
+        r.deckSize,
+      );
       const players: Player[] = playerNames.map((name) => ({
         id: makeId(),
         name,
@@ -153,22 +158,22 @@ export const gameStore = {
           totalRounds: cardsPerRound.length,
           cardsPerRound,
         },
-        phase: 'bidding',
+        phase: "bidding",
         currentRound: 1,
         players,
         rounds: [],
         currentBids: [],
         timeline: [],
-        peer: { role: 'solo', roomId: null },
+        peer: { role: "solo", roomId: null },
       };
       state = appendEvent(state, {
         round: null,
-        type: 'game_start',
+        type: "game_start",
         payload: { playerCount: players.length, ruleset, scoringMethod },
       });
       state = appendEvent(state, {
         round: 1,
-        type: 'round_start',
+        type: "round_start",
         payload: { cards: cardsPerRound[0] },
       });
       return state;
@@ -176,10 +181,14 @@ export const gameStore = {
   },
 
   submitBids(bids: Bid[]) {
-    update((s) => ({ ...s, currentBids: bids, phase: 'scoring' }));
+    update((s) => ({ ...s, currentBids: bids, phase: "scoring" }));
   },
 
-  saveRound(scores: TrickScore[], turnExtras: TurnExtra[], cardsInPlay: number) {
+  saveRound(
+    scores: TrickScore[],
+    turnExtras: TurnExtra[],
+    cardsInPlay: number,
+  ) {
     update((s) => {
       const round = {
         number: s.currentRound,
@@ -207,19 +216,24 @@ export const gameStore = {
       next = recomputeTotalScores(next);
       next = appendEvent(next, {
         round: s.currentRound,
-        type: 'round_end',
-        payload: { scores: round.scores.map((sc) => ({ playerId: sc.playerId, roundScore: sc.roundScore })) },
+        type: "round_end",
+        payload: {
+          scores: round.scores.map((sc) => ({
+            playerId: sc.playerId,
+            roundScore: sc.roundScore,
+          })),
+        },
       });
 
       const isLast = s.currentRound >= s.meta.totalRounds;
       if (isLast) {
-        next.phase = 'gameover';
+        next.phase = "gameover";
       } else {
-        next.phase = 'bidding';
+        next.phase = "bidding";
         next.currentRound = s.currentRound + 1;
         next = appendEvent(next, {
           round: next.currentRound,
-          type: 'round_start',
+          type: "round_start",
           payload: { cards: s.meta.cardsPerRound[next.currentRound - 1] },
         });
       }
@@ -230,9 +244,12 @@ export const gameStore = {
   addPlayer(name: string, preset: ScorePreset | number) {
     update((s) => {
       const initialScore =
-        typeof preset === 'number'
+        typeof preset === "number"
           ? preset
-          : suggestInitialScore(preset, s.players.filter((p) => p.active));
+          : suggestInitialScore(
+              preset,
+              s.players.filter((p) => p.active),
+            );
       const player: Player = {
         id: makeId(),
         name,
@@ -244,7 +261,7 @@ export const gameStore = {
       let next: GameState = { ...s, players: [...s.players, player] };
       next = appendEvent(next, {
         round: s.currentRound,
-        type: 'player_joined',
+        type: "player_joined",
         payload: { name, initialScore },
       });
       return next;
@@ -253,7 +270,7 @@ export const gameStore = {
 
   removePlayer(playerId: string) {
     update((s) => {
-      const name = s.players.find((p) => p.id === playerId)?.name ?? '';
+      const name = s.players.find((p) => p.id === playerId)?.name ?? "";
       let next: GameState = {
         ...s,
         players: s.players.map((p) =>
@@ -262,7 +279,7 @@ export const gameStore = {
       };
       next = appendEvent(next, {
         round: s.currentRound,
-        type: 'player_removed',
+        type: "player_removed",
         payload: { name },
       });
       return next;
@@ -273,7 +290,7 @@ export const gameStore = {
     update(() => defaultState());
   },
 
-  setPeerRole(role: GameState['peer']['role'], roomId: string | null) {
+  setPeerRole(role: GameState["peer"]["role"], roomId: string | null) {
     update((s) => ({ ...s, peer: { role, roomId } }));
   },
 

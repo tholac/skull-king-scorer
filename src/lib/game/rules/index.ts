@@ -1,6 +1,6 @@
-import type { Ruleset, RulesetId } from '../types';
-import { baseRuleset } from './base';
-import { extendedRuleset } from './extension';
+import type { Ruleset, RulesetId } from "../types";
+import { baseRuleset } from "./base";
+import { extendedRuleset } from "./extension";
 
 const registry: Record<RulesetId, Ruleset> = {
   base: baseRuleset,

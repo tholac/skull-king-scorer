@@ -1,4 +1,4 @@
-import type { ScoringMethod } from './types';
+import type { ScoringMethod } from "./types";
 
 export function computeRoundScore(
   bid: number,
@@ -12,9 +12,8 @@ export function computeRoundScore(
 
   if (bid === 0) {
     base = tricksWon === 0 ? 10 * cardsInPlay : -10 * cardsInPlay;
-  } else if (method === 'classic') {
-    base =
-      tricksWon === bid ? 20 * bid : -10 * Math.abs(bid - tricksWon);
+  } else if (method === "classic") {
+    base = tricksWon === bid ? 20 * bid : -10 * Math.abs(bid - tricksWon);
   } else {
     const pool = 10 * round;
     const diff = Math.abs(bid - tricksWon);

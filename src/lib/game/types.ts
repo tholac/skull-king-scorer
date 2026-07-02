@@ -1,6 +1,6 @@
-export type Phase = 'setup' | 'bidding' | 'scoring' | 'gameover';
-export type RulesetId = 'base' | 'extended';
-export type ScoringMethod = 'classic' | 'rascal';
+export type Phase = "setup" | "bidding" | "scoring" | "gameover";
+export type RulesetId = "base" | "extended";
+export type ScoringMethod = "classic" | "rascal";
 
 export interface GameState {
   id: string;
@@ -17,7 +17,7 @@ export interface GameState {
   currentBids: Bid[];
   timeline: TimelineEvent[];
   peer: {
-    role: 'solo' | 'host' | 'guest';
+    role: "solo" | "host" | "guest";
     roomId: string | null;
   };
 }
@@ -25,8 +25,8 @@ export interface GameState {
 export interface Player {
   id: string;
   name: string;
-  totalScore: number;   // scoreOffset + sum of roundScores — recomputed on every save
-  scoreOffset: number;  // initial score for mid-game joins; 0 for players starting at game start
+  totalScore: number; // scoreOffset + sum of roundScores — recomputed on every save
+  scoreOffset: number; // initial score for mid-game joins; 0 for players starting at game start
   joinedAtRound: number;
   active: boolean;
 }
@@ -54,7 +54,7 @@ export interface TrickScore {
 }
 
 export interface TurnExtra {
-  type: 'kraken' | 'whale' | string;
+  type: "kraken" | "whale" | string;
   note?: string;
 }
 
@@ -82,12 +82,12 @@ export interface TimelineEvent {
   id: number;
   round: number | null;
   type:
-    | 'game_start'
-    | 'round_start'
-    | 'round_end'
-    | 'player_joined'
-    | 'player_removed'
-    | 'turn_extra'
+    | "game_start"
+    | "round_start"
+    | "round_end"
+    | "player_joined"
+    | "player_removed"
+    | "turn_extra"
     | string;
   payload: Record<string, unknown>;
   timestamp: number;
