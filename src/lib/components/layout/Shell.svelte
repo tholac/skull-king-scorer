@@ -8,11 +8,11 @@
 
 {#key $languageStore}
 <div class="h-screen flex flex-col overflow-hidden">
-  <header class="navbar bg-base-200 border-b border-base-300 px-4 min-h-12 shrink-0">
-    <div class="flex-1">
-      <span class="font-bold text-lg tracking-tight">☠️ Skore King</span>
+  <header class="navbar bg-base-200 border-b border-base-300 px-4 min-h-12 shrink-0 overflow-hidden">
+    <div class="flex-1 min-w-0 overflow-hidden">
+      <span class="font-bold text-lg tracking-tight truncate">☠️ Skore King</span>
     </div>
-    <div class="flex-none flex flex-row gap-2 items-center">
+    <div class="flex-none flex flex-row gap-1 items-center">
       <ConnectionBadge />
       <div class="join">
         {#each (['en', 'fr'] as const) as lang}
@@ -33,7 +33,7 @@
       {#if $gameStore.phase !== 'setup'}
         <PeerPanel />
         <button
-          class="btn btn-ghost btn-xs"
+          class="btn btn-ghost btn-xs hidden sm:inline-flex"
           onclick={() => {
             if (confirm(m.new_game_confirm())) {
               gameStore.newGame();
@@ -41,6 +41,17 @@
           }}
         >
           {m.new_game()}
+        </button>
+        <button
+          class="btn btn-ghost btn-xs sm:hidden"
+          title={m.new_game()}
+          onclick={() => {
+            if (confirm(m.new_game_confirm())) {
+              gameStore.newGame();
+            }
+          }}
+        >
+          🔄
         </button>
       {/if}
     </div>

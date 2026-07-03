@@ -30,8 +30,9 @@
 
 {#key $languageStore}
 <div class="relative">
-  <button class="btn btn-ghost btn-sm" onclick={() => (showPanel = !showPanel)}>
-    {m.nav_share()}
+  <button class="btn btn-ghost btn-xs" onclick={() => (showPanel = !showPanel)} title={m.nav_share()}>
+    <span class="hidden sm:inline">{m.nav_share()}</span>
+    <span class="sm:hidden">📡</span>
   </button>
 
   {#if showPanel}

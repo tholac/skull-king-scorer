@@ -72,7 +72,7 @@
   );
 
   const sumEmoji = $derived(
-    bidSum === effectiveCards ? '✅' : bidSum > effectiveCards ? '☠️' : '🦈',
+    bidSum === effectiveCards ? '✅' : bidSum > effectiveCards ? '☠️' : '😬',
   );
 
   function adjustBid(playerId: string, delta: number) {
@@ -104,15 +104,15 @@
 </script>
 
 {#key $languageStore}
-<div class="max-w-lg mx-auto py-6 px-4">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-bold">{m.bidding_title({ round: $gameStore.currentRound })}</h2>
-    <div class="flex items-center gap-2">
-      <label for="cards-in-play" class="text-sm text-base-content/60">{m.bidding_cards_label()}</label>
+<div class="max-w-lg mx-auto py-3 pb-20 lg:pb-3">
+  <div class="flex items-center justify-between mb-3 gap-2">
+    <h2 class="text-lg font-bold min-w-0">{m.bidding_title({ round: $gameStore.currentRound })}</h2>
+    <div class="flex items-center gap-1 shrink-0">
+      <label for="cards-in-play" class="text-sm text-base-content/60 whitespace-nowrap">{m.bidding_cards_label()}</label>
       <input
         id="cards-in-play"
         type="number"
-        class="input input-bordered input-sm w-16"
+        class="input input-bordered input-sm w-14"
         min="1"
         value={effectiveCards}
         oninput={(e) => {
@@ -148,16 +148,18 @@
     {/each}
   </div>
 
-  <div class="flex gap-2 justify-between">
-    <div class="flex gap-2">
+  {#if $canGoBack || $canGoForward}
+    <div class="flex gap-2 mb-2">
       {#if $canGoBack}
-        <button class="btn btn-ghost btn-sm" onclick={() => gameStore.goBack()}>{m.nav_back()}</button>
+        <button class="btn btn-ghost btn-sm flex-1" onclick={() => gameStore.goBack()}>{m.nav_back()}</button>
       {/if}
       {#if $canGoForward}
-        <button class="btn btn-ghost btn-sm" onclick={() => gameStore.goForward()}>{m.nav_forward()}</button>
+        <button class="btn btn-ghost btn-sm flex-1" onclick={() => gameStore.goForward()}>{m.nav_forward()}</button>
       {/if}
-      <button class="btn btn-ghost btn-sm" onclick={() => (modalOpen = true)}>{m.bidding_add_player()}</button>
     </div>
+  {/if}
+  <div class="flex gap-2 justify-between">
+    <button class="btn btn-ghost btn-sm" onclick={() => (modalOpen = true)}>{m.bidding_add_player()}</button>
     <button class="btn btn-primary" onclick={proceed}>{m.bidding_lock()}</button>
   </div>
 </div>

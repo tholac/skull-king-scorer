@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import { setLanguageTag, availableLanguageTags, type AvailableLanguageTag } from '$lib/paraglide/runtime.js';
+import { setLocale, locales, type Locale } from '$lib/paraglide/runtime.js';
 
 const STORAGE_KEY = 'skull-king-lang';
 const PIRATE_KEY = 'skull-king-pirate';
@@ -25,10 +25,10 @@ function detectPirate(): boolean {
   return false;
 }
 
-function toTag(base: BaseLang, pirate: boolean): AvailableLanguageTag {
+function toTag(base: BaseLang, pirate: boolean): Locale {
   const tag = pirate ? `${base}-pirate` : base;
-  if ((availableLanguageTags as readonly string[]).includes(tag)) {
-    return tag as AvailableLanguageTag;
+  if ((locales as readonly string[]).includes(tag)) {
+    return tag as Locale;
   }
   return base;
 }
@@ -36,7 +36,7 @@ function toTag(base: BaseLang, pirate: boolean): AvailableLanguageTag {
 const initialBase = detectBaseLang();
 const initialPirate = detectPirate();
 const initialTag = toTag(initialBase, initialPirate);
-setLanguageTag(initialTag);
+if (typeof setLocale === 'function') setLocale(initialTag);
 
 export const baseLangStore = writable<BaseLang>(initialBase);
 export const pirateStore = writable<boolean>(initialPirate);
@@ -47,7 +47,7 @@ export const languageStore = derived(
 );
 
 // Keep paraglide in sync whenever languageStore changes
-languageStore.subscribe((tag) => setLanguageTag(tag));
+languageStore.subscribe((tag) => { if (typeof setLocale === 'function') setLocale(tag); });
 
 export function setLanguage(lang: BaseLang) {
   if (typeof localStorage !== 'undefined') {

@@ -38,7 +38,7 @@
     </button>
     <input
         type="number"
-        class="input input-bordered w-20 text-center"
+        class="input input-bordered w-14 text-center"
         min={min}
         max={max}
         step={step}

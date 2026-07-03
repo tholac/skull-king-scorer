@@ -8,7 +8,6 @@
   import { computeRoundScore } from "$lib/game/scoring";
   import type { TrickScore, TurnExtra } from "$lib/game/types";
   import NumberInput from "../shared/NumberInput.svelte";
-  import BonusHelpPopup from "../shared/BonusHelpPopup.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { languageStore } from "$lib/store/languageStore.js";
 
@@ -187,11 +186,11 @@
 </script>
 
 {#key $languageStore}
-<div class="max-w-4xl mx-auto py-6 px-4">
-  <h2 class="text-xl font-bold mb-4">
+<div class="max-w-4xl mx-auto py-3 pb-20 lg:pb-3">
+  <h2 class="text-xl font-bold mb-2">
     {m.scoring_title({ round: $gameStore.currentRound })}
   </h2>
-  <p class="text-sm text-base-content/70 mb-3">
+  <p class="text-sm text-base-content/70 mb-2">
     {m.scoring_cards_this_round()} <span class="font-semibold">{cardsInPlay}</span>
     {#if hasKraken || everybodyPassedExtra}
       <span class="ml-2"
@@ -204,13 +203,13 @@
     {/if}
   </p>
 
-  <div class="flex flex-wrap gap-3 mb-4">
+  <div class="flex flex-wrap gap-2 mb-3">
     {#each scorePlayers as player (player.id)}
       {@const bid = getBid(player.id)}
       {@const row = rows[player.id]}
       {#if row}
-        <div class="card bg-base-200 p-3">
-          <div class="grid gap-y-3">
+        <div class="card bg-base-200 p-2 w-full sm:w-auto">
+          <div class="grid gap-y-2">
             <div class="flex items-start justify-between gap-3">
               <span class="font-semibold min-w-24">{player.name}</span>
 
@@ -226,7 +225,7 @@
             </div>
 
             <div
-              class="grid grid-cols-[4rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-3 min-w-0"
+              class="grid grid-cols-[3rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-2 min-w-0"
             >
               <span class="text-sm text-base-content/50 leading-none">{m.scoring_bid_label()}</span>
               <div class="dropdown dropdown-bottom justify-self-center">
@@ -298,14 +297,14 @@
             </div>
 
             <div
-              class="grid grid-cols-[4rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-3 min-w-0"
+              class="grid grid-cols-[3rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-2 min-w-0"
             >
-              <span class="text-sm text-base-content/70 leading-none"
-                >{m.scoring_bonus_label()}</span
-              >
-              <div aria-hidden="true" class="h-11 w-11"></div>
-              <div aria-hidden="true" class="h-11 w-11"></div>
-              <div class="flex items-center gap-3 min-w-0 justify-self-start">
+              <div class="col-span-3 flex items-center">
+                <span class="text-sm text-base-content/70 leading-none"
+                  >{m.scoring_bonus_label()}</span
+                >
+              </div>
+              <div class="min-w-0 justify-self-start">
                 <NumberInput
                   bind:value={row.bonus}
                   min={-500}
@@ -314,7 +313,6 @@
                   valueName={m.scoring_bonus_input_label({ name: player.name })}
                   disabled={false}
                 />
-                <BonusHelpPopup />
               </div>
             </div>
           </div>
@@ -345,17 +343,21 @@
     </div>
   {/if}
 
+  {#if $canGoBack || $canGoForward}
+    <div class="flex gap-2 mt-2">
+      {#if $canGoBack}
+        <button class="btn btn-ghost btn-sm flex-1" onclick={() => gameStore.goBack()}
+          >{m.nav_back()}</button
+        >
+      {/if}
+      {#if $canGoForward}
+        <button class="btn btn-ghost btn-sm flex-1" onclick={() => gameStore.goForward()}
+          >{m.nav_forward()}</button
+        >
+      {/if}
+    </div>
+  {/if}
   <div class="flex gap-2 mt-2">
-    {#if $canGoBack}
-      <button class="btn btn-ghost" onclick={() => gameStore.goBack()}
-        >{m.nav_back()}</button
-      >
-    {/if}
-    {#if $canGoForward}
-      <button class="btn btn-ghost" onclick={() => gameStore.goForward()}
-        >{m.nav_forward()}</button
-      >
-    {/if}
     <button class="btn btn-primary flex-1" onclick={() => save()}
       >{m.scoring_save()}</button
     >

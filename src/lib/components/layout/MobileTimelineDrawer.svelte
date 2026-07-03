@@ -7,8 +7,8 @@
 </script>
 
 {#key $languageStore}
-<div class="lg:hidden fixed bottom-6 left-4 z-50">
-  <button class="btn btn-secondary btn-circle shadow-lg" onclick={() => (open = true)}>
+<div class="lg:hidden fixed bottom-4 left-2 z-50">
+  <button class="btn btn-secondary btn-circle btn-lg shadow-lg" onclick={() => (open = true)}>
     📜
   </button>
 </div>
